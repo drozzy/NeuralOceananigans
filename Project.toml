@@ -3,6 +3,10 @@ uuid = "23a5ca72-87e4-4a94-a405-cc4477d5c591"
 authors = ["Andriy Drozdyuk <andriy@drozdyuk.com> and contributors"]
 version = "0.1.0"
 
+[deps]
+NeuralPDE = "315f7962-48a3-4962-8226-d0f33b1235f0"
+Oceananigans = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
+
 [compat]
 julia = "1"
 
