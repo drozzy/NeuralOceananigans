@@ -1,1 +1,1 @@
-# NeuralOceananigans
+# NeuralOcenanigans
