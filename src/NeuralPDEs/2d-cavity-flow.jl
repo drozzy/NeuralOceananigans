@@ -55,8 +55,7 @@ bcs = [
         p(t,x,y_max)~0.0,
         Dy(p(t,x,0.0))~0.0,
         Dx(p(t,0.0,y))~0.0,
-        Dx(p(t,x_max,y))~0.0
-      ]
+        Dx(p(t,x_max,y))~0.0 ]
 
 # Space and time domains
 domains = [t ∈ IntervalDomain(0.0,t_max),

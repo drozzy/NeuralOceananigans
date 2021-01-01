@@ -812,9 +812,9 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[ModelingToolkit]]
 deps = ["ArrayInterface", "DataStructures", "DiffEqBase", "DiffEqJump", "DiffRules", "Distributed", "Distributions", "DocStringExtensions", "IfElse", "LabelledArrays", "Latexify", "Libdl", "LightGraphs", "LinearAlgebra", "MacroTools", "NaNMath", "RecursiveArrayTools", "Requires", "RuntimeGeneratedFunctions", "SafeTestsets", "SparseArrays", "SpecialFunctions", "StaticArrays", "SymbolicUtils", "TreeViews", "UnPack", "Unitful"]
-git-tree-sha1 = "a2fa324400de2acb14da3c8f8aef1be9043c6ea4"
+git-tree-sha1 = "e145287dc2ba41d9619dbba447eee840d68df1d6"
 uuid = "961ee093-0014-501f-94e3-6117800e7a78"
-version = "4.3.4"
+version = "4.4.2"
 
 [[MonteCarloIntegration]]
 deps = ["Distributions", "Random"]

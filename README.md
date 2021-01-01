@@ -8,3 +8,4 @@ Relevant things:
 - Flux.jl https://github.com/FluxML/Flux.jl
 - DiffEqFlux.jl https://github.com/SciML/DiffEqFlux.jl
 - Zygote.jl https://github.com/FluxML/Zygote.jl
+- 12 Steps Navier Stokes (in Python): https://nbviewer.jupyter.org/github/barbagroup/CFDPython/blob/master/lessons/14_Step_11.ipynb
