@@ -45,7 +45,7 @@ function simulate_advection_diffusion(; Nx, Δt, stop_time, U, κ, initial_condi
     run!(simulation)
 
     @info "Animating $filename..."
-    file = jldopen("$filename.jld2")
+    file = jldopen("advection_diffusion/$filename.jld2")
     iterations = parse.(Int, keys(file["timeseries/t"]))
 
     anim = @animate for (i, iter) in enumerate(iterations)
