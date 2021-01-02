@@ -8,9 +8,6 @@ using Quadrature, Cubature, Cuba
 @derivatives Dxx''~x
 @derivatives Dx'~x
 
-# @derivatives Dy'~y
-# @derivatives Dyy''~y
-
 # Parameters
 
 v = 1
@@ -81,10 +78,10 @@ end
 
 gif(anim, "advection_diffusion_pinn.gif", fps=15)
 
-c_predict = reshape([ phi([0, x], res.minimizer)[1] for x in xs], length(xs))
-plot(xs,c_predict)
+# c_predict = reshape([ phi([0, x], res.minimizer)[1] for x in xs], length(xs))
+# plot(xs,c_predict)
 
-c_predict = reshape([ phi([t_max,x], res.minimizer)[1] for x in xs], length(xs))
+# c_predict = reshape([ phi([t_max,x], res.minimizer)[1] for x in xs], length(xs))
 
-using Plots
-plot(xs,c_predict)
+# using Plots
+# plot(xs,c_predict)
