@@ -1,6 +1,12 @@
 using Printf
-using NeuralPDE, Flux, ModelingToolkit, GalacticOptim, Optim, DiffEqFlux
+using Flux
+using ModelingToolkit
+using GalacticOptim
+using Optim
+using DiffEqFlux
+using NeuralPDE
 using Quadrature, Cubature, Cuba
+
 
 @parameters t,x
 @variables c(..)
@@ -26,7 +32,7 @@ bcs = [ c(t, x_min) ~ c(t, x_max),
 
 # Space and time domains
 domains = [t ∈ IntervalDomain(0.0,t_max),
-           x ∈ IntervalDomain(x_min,x_max)
+        x ∈ IntervalDomain(x_min,x_max)
 ]
 
 # Discretization
