@@ -10,6 +10,13 @@ using Oceananigans.OutputWriters
 # See: https://github.com/jheinen/GR.jl/issues/278
 ENV["GKSwstype"] = 100
 
+function make_output_dirs()
+    simulation_dir = joinpath(@__DIR__, "simulation")
+    s = mkpath(simulation_dir)
+    animation_path = joinpath(@__DIR__, "animation")
+    a = mkpath(animation_path)
+    return s, a
+end
 """
     simulate_advection_diffusion(; Nx, Δt, stop_time, U, κ, initial_condition, output_interval, filename)
 
@@ -22,6 +29,7 @@ function simulate_advection_diffusion(; Nx, Δt, stop_time, U, κ, initial_condi
     topo = (Periodic, Periodic, Periodic)
     domain = (x=(-1, 1), y=(0, 1), z=(0, 1))
     grid = RegularCartesianGrid(topology=topo, size=(Nx, 1, 1); domain...)
+    simulation_dir, animation_dir = make_output_dirs()
 
     model = IncompressibleModel(
         architecture = CPU(),
@@ -39,13 +47,11 @@ function simulate_advection_diffusion(; Nx, Δt, stop_time, U, κ, initial_condi
 
     simulation.output_writers[:tracer] =
         JLD2OutputWriter(model, (c=model.tracers.c,), schedule=TimeInterval(output_interval),
-                         dir=@__DIR__, prefix=filename, force=true)
+                         dir=simulation_dir, prefix=filename, force=true)
 
-    @info "Running $filename simulation with Nx=$Nx, Δt=$Δt, U=$U, κ=$κ until t=$stop_time..."
     run!(simulation)
 
-    @info "Animating $filename..."
-    file = jldopen("advection_diffusion/$filename.jld2")
+    file = jldopen(joinpath(simulation_dir, "$filename.jld2"))
     iterations = parse.(Int, keys(file["timeseries/t"]))
 
     anim = @animate for (i, iter) in enumerate(iterations)
@@ -57,8 +63,8 @@ function simulate_advection_diffusion(; Nx, Δt, stop_time, U, κ, initial_condi
              label="", xlabel="x", ylabel="Tracer", xlims=(-1, 1), ylims=(-1, 1))
     end
 
-    gif(anim, "$filename.gif", fps=15)
-    mp4(anim, "$filename.mp4", fps=15)
+    gif(anim, joinpath(animation_dir, "$filename.gif"), fps=15)
+    mp4(anim, joinpath(animation_dir, "$filename.mp4"), fps=15)
 end
 
 c₀_cosine(x) = cos(π*x)

@@ -18,6 +18,4 @@ docs/build/
 docs/site/
 
 # Oceananigans output
-*.jld2
 *.nc
-*.mp4
