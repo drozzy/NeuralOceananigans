@@ -63,7 +63,7 @@ cb = function (p,l)
     return false
 end
 
-res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=10)
+res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=100)
 
 
 # Plots
@@ -90,7 +90,4 @@ end
 gif(anim, "advection_diffusion_pinn.gif", fps=15)
 
 c_predict = reshape([ phi([0, x], res.minimizer)[1] for x in xs], length(xs))
-plot(xs,c_predict)
-
-using Plots
 plot(xs,c_predict)

@@ -26,8 +26,10 @@ x_max = 1.0
 # Equations, initial and boundary conditions
 eqs = [ Dt(c(t, x)) ~ D * Dxx(c(t,x)) - Dx(c(t,x)) ]
 
-bcs = [ c(t, x_min) ~ c(t, x_max),
-        c(0, x) ~ cos(π*x)    
+bcs = [ 
+        c(0, x) ~ cos(π*x),  
+        c(t, x_min) ~ c(t, x_max)
+        
 ]
 
 # Space and time domains
@@ -85,9 +87,4 @@ end
 gif(anim, "advection_diffusion_pinn.gif", fps=15)
 
 # c_predict = reshape([ phi([0, x], res.minimizer)[1] for x in xs], length(xs))
-# plot(xs,c_predict)
-
-# c_predict = reshape([ phi([t_max,x], res.minimizer)[1] for x in xs], length(xs))
-
-# using Plots
 # plot(xs,c_predict)
