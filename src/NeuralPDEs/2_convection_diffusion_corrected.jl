@@ -1,11 +1,11 @@
 # Corrected by Emmanuel Lujan 
 using Printf
-using NeuralPDE
 using Flux
 using ModelingToolkit
 using GalacticOptim
 using Optim
 using DiffEqFlux
+using NeuralPDE
 using Quadrature, Cubature, Cuba
 
 
@@ -14,7 +14,6 @@ using Quadrature, Cubature, Cuba
 @derivatives Dt'~t
 @derivatives Dxx''~x
 @derivatives Dx'~x
-
 
 # Parameters
 
