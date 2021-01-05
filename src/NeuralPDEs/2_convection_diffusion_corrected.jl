@@ -1,6 +1,6 @@
 # Corrected by Emmanuel Lujan 
 using Printf
-using Flux
+import Flux: σ
 using ModelingToolkit
 using GalacticOptim
 using Optim
@@ -47,8 +47,8 @@ dim = length(domains)
 output = length(eqs)
 hidden = 8
 
-chain = FastChain( FastDense(dim, hidden, Flux.σ),
-                    FastDense(hidden, hidden, Flux.σ),
+chain = FastChain( FastDense(dim, hidden, σ),
+                    FastDense(hidden, hidden, σ),
                     FastDense(hidden, 1))
 
 strategy = GridTraining(dx=[dt,dx])
@@ -63,7 +63,7 @@ cb = function (p,l)
     return false
 end
 
-res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=1200)
+res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=10)
 
 
 # Plots
