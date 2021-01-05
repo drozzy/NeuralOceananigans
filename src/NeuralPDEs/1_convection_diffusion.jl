@@ -1,5 +1,5 @@
 using Printf
-using Flux
+import Flux: σ
 using ModelingToolkit
 using GalacticOptim
 using Optim
@@ -47,8 +47,8 @@ dim = length(domains)
 output = length(eqs)
 hidden = 8
 
-chain = FastChain( FastDense(dim, hidden, Flux.σ),
-                    FastDense(hidden, hidden, Flux.σ),
+chain = FastChain( FastDense(dim, hidden, σ),
+                    FastDense(hidden, hidden, σ),
                     FastDense(hidden, 1))
 
 strategy = GridTraining(dx=dx)
