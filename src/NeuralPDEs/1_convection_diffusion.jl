@@ -63,7 +63,7 @@ cb = function (p,l)
     return false
 end
 
-res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=100)
+res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=1200)
 
 
 # Plots
