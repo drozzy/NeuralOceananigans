@@ -51,7 +51,7 @@ nx = 32
 # ny = 32
 dx = (x_max-x_min) / (nx - 1)
 # dy = (y_max-y_min) / (ny -1)
-# dt = 0.01
+dt = 0.01
 
 # Neural network
 dim = length(domains)
@@ -75,7 +75,7 @@ cb = function (p,l)
     return false
 end
 
-res = GalacticOptim.solve(prob,ADAM();cb=cb,maxiters=10)
+res = GalacticOptim.solve(prob,ADAM();cb=cb,maxiters=100)
 
 
 # Plots
@@ -98,7 +98,7 @@ anim = @animate for (i, t) in enumerate(0:dt:t_max)
     @info "Animating frame $i..."
     c_predict = reshape([phi([t, x, y], res.minimizer)[1] for x in xs for y in ys], length(xs), length(ys))
     title = @sprintf("Advection-diffusion t = %.3f", t)
-    heatmap(xs, ys, c_predict, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal)#, clims=(0, 1))
+    heatmap(xs, ys, c_predict, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal, clims=(0, 1))
 end
 
 gif(anim, "advection_diffusion_2d_pinn.gif", fps=15)
