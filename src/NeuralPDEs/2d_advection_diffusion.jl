@@ -35,7 +35,7 @@ y_max = 1.0
 eqs = [ Dt(c(t,x,y)) ~ D * (Dxx(c(t,x,y)) + Dyy(c(t,x,y))) - (u*Dx(c(t,x,y)) + v*Dy(c(t,x,y))) + R]
 
 bcs = [ 
-        c(0, x, y) ~ exp(-(x^2+y^2)/0.1) + 1, #cos(π*x) * cos(π*y) + 1.0,  
+        c(0, x, y) ~ exp(-(x^2+y^2)/0.1), #cos(π*x) * cos(π*y) + 1.0,  
         c(t, x_min, y) ~ c(t, x_max, y),
         c(t, x, y_min) ~ c(t, x, y_max)
 ]
@@ -47,9 +47,9 @@ domains = [t ∈ IntervalDomain(0.0,t_max),
 ]
 
 # Discretization
-# nx = 32
+nx = 32
 # ny = 32
-# dx = (x_max-x_min) / (nx - 1)
+dx = (x_max-x_min) / (nx - 1)
 # dy = (y_max-y_min) / (ny -1)
 # dt = 0.01
 
@@ -75,7 +75,7 @@ cb = function (p,l)
     return false
 end
 
-res = GalacticOptim.solve(prob,ADAM();cb=cb,maxiters=50)
+res = GalacticOptim.solve(prob,ADAM();cb=cb,maxiters=10)
 
 
 # Plots
