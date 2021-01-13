@@ -8,39 +8,49 @@ using NeuralPDE
 using Quadrature, Cubature, Cuba
 using Plots
 
-@parameters t,x
+@parameters t,x,y
 @variables c(..)
 @derivatives Dt'~t
 @derivatives Dxx''~x
+@derivatives Dyy''~y
 @derivatives Dx'~x
+@derivatives Dy'~y
 
 # Parameters
 
-v = 1
+u = 1.0
+v = 1.0
+v_vector = (u, v)
 R = 0
 D = 0.1 # diffusion
 t_max = 2.0
 x_min = -1.0
 x_max = 1.0
+y_min = -1.0
+y_max = 1.0
 
+# div(v_vector * c) = dx(uc) + dy(vc)
 # Equations, initial and boundary conditions
-eqs = [ Dt(c(t, x)) ~ D * Dxx(c(t,x)) - Dx(c(t,x)) ]
+eqs = [ Dt(c(t,x,y)) ~ D * (Dxx(c(t,x,y)) + Dyy(c(t,x,y))) - (u*Dx(c(t,x,y)) + v*Dy(c(t,x,y))) + R]
 
 bcs = [ 
-        c(0, x) ~ cos(π*x) + 1.0,  
-        c(t, x_min) ~ c(t, x_max)
-        
+        c(0, x, y) ~ cos(π*x) * cos(π*y) + 1.0,  
+        c(t, x_min, y) ~ c(t, x_max, y),
+        c(t, x, y_min) ~ c(t, x, y_max)
 ]
 
 # Space and time domains
 domains = [t ∈ IntervalDomain(0.0,t_max),
-        x ∈ IntervalDomain(x_min,x_max)
+        x ∈ IntervalDomain(x_min,x_max),
+        y ∈ IntervalDomain(y_min,y_max)
 ]
 
 # Discretization
-nx = 32
-dx = (x_max-x_min) / (nx - 1)
-dt = 0.01
+# nx = 32
+# ny = 32
+# dx = (x_max-x_min) / (nx - 1)
+# dy = (y_max-y_min) / (ny -1)
+# dt = 0.01
 
 # Neural network
 dim = length(domains)
@@ -51,11 +61,12 @@ chain = FastChain( FastDense(dim, hidden, tanh),
                     FastDense(hidden, hidden, tanh),
                     FastDense(hidden, 1))
 
-strategy = GridTraining(dx=[dt,dx])
+# strategy = GridTraining(dx=[dt,dx,dy])
+strategy = StochasticTraining(900)
 
 discretization = PhysicsInformedNN(chain, strategy=strategy)
 
-pde_system = PDESystem(eqs, bcs, domains, [t,x], [c])
+pde_system = PDESystem(eqs, bcs, domains, [t,x,y], [c])
 prob = discretize(pde_system,discretization)
 
 cb = function (p,l)
@@ -63,7 +74,7 @@ cb = function (p,l)
     return false
 end
 
-res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=100)
+res = GalacticOptim.solve(prob,ADAM();cb=cb,maxiters=100)
 
 
 # Plots
