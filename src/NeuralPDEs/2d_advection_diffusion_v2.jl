@@ -22,6 +22,7 @@ v = 1.0
 v_vector = (u, v)
 R = 0
 D = 0 # 0.1 # diffusion
+t_min = 0.0
 t_max = 2.0
 x_min = -1.0
 x_max = 1.0
@@ -40,12 +41,12 @@ eqs = Dt(c(t,x,y)) ~ D * (Dxx(c(t,x,y)) + Dyy(c(t,x,y))) - (u*Dx(c(t,x,y)) + v*D
 
 bcs = [
         c(0, x, y) ~ exp(-(x^2+y^2)/0.1), #cos(π*x) * cos(π*y) + 1.0 #,
+        c(t, x, y_min) ~ c(t, x, y_max),
         c(t, x_min, y) ~ c(t, x_max, y),
-        c(t, x, y_min) ~ c(t, x, y_max)
       ]
 
 #first step
-domains = [t ∈ IntervalDomain(0.0,0.001),
+domains = [t ∈ IntervalDomain(0.0,0.01),
            x ∈ IntervalDomain(x_min,x_max),
            y ∈ IntervalDomain(y_min,y_max)
           ]
@@ -63,12 +64,11 @@ quadrature_strategy = NeuralPDE.QuadratureTraining(quadrature_alg=CubaCuhre(),
 discretization = NeuralPDE.PhysicsInformedNN(chain,quadrature_strategy)
 pde_system = PDESystem(eqs, bcs, domains, [t,x,y], [c])
 prob = NeuralPDE.discretize(pde_system,discretization)
-res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=1500)
+res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=2500)
 
 
-
-nx = 128
-ny = 128
+nx = 32
+ny = 32
 dx = (x_max-x_min) / (nx - 1)
 dy = (y_max-y_min) / (ny -1)
 dt = 0.01
@@ -84,6 +84,8 @@ function plots_init()
     plot(p1,p2)
 end
 
+plots_init()
+
 function plot_comparison()
 
     # Animate
@@ -97,69 +99,38 @@ function plot_comparison()
         title = @sprintf("c_real")
         p2 = heatmap(xs, ys, c_real, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal, clims=(0, 1.))
         title = @sprintf("error_c")
-        p3 = heatmap(xs, ys, error_c, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal,clims=(0, 0.3))
+        p3 = heatmap(xs, ys, error_c, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal,clims=(0, 0.1))
         plot(p1,p2,p3)
     end
     gif(anim, "advection_diffusion_2d_pinn_comparison.gif", fps=15)
 end
 
-plots_init()
-
 plot_comparison()
 
 
-#second step
-quadrature_strategy = NeuralPDE.QuadratureTraining(quadrature_alg=CubaCuhre(),
-                                                   reltol = 1e-5, abstol = 1e-3,
-                                                   maxiters = 30)
-domains = [t ∈ IntervalDomain(0.0,0.01),
-           x ∈ IntervalDomain(x_min,x_max),
-           y ∈ IntervalDomain(y_min,y_max)
-          ]
-initθ_ = res.minimizer
-discretization = NeuralPDE.PhysicsInformedNN(chain,quadrature_strategy;init_params = initθ_)
-pde_system = PDESystem(eqs, bcs, domains, [t,x,y], [c])
-prob = NeuralPDE.discretize(pde_system,discretization)
-res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=1000)
+for t_ in collect(0.1:0.2:t_max)
+    quadrature_strategy = NeuralPDE.QuadratureTraining(quadrature_alg=CubaCuhre(),
+                                                       reltol = 1e-8, abstol = 1e-6,
+                                                       maxiters = 30)
+    domains = [t ∈ IntervalDomain(0.0,t_),
+               x ∈ IntervalDomain(x_min,x_max),
+               y ∈ IntervalDomain(y_min,y_max)
+              ]
+    initθ_ = res.minimizer
+    discretization = NeuralPDE.PhysicsInformedNN(chain,quadrature_strategy;init_params = initθ_)
+    pde_system = PDESystem(eqs, bcs, domains, [t,x,y], [c])
+    prob = NeuralPDE.discretize(pde_system,discretization)
+    res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=2500)
+    plot_comparison()
+    println("done")
+end
 
-
-plot_comparison()
-
-#3rd step
-quadrature_strategy = NeuralPDE.QuadratureTraining(quadrature_alg=CubaCuhre(),
-                                                   reltol = 1e-8, abstol = 1e-6,
-                                                   maxiters = 30)
-domains = [t ∈ IntervalDomain(0.0,0.1),
-           x ∈ IntervalDomain(x_min,x_max),
-           y ∈ IntervalDomain(y_min,y_max)
-          ]
-initθ_ = res.minimizer
-discretization = NeuralPDE.PhysicsInformedNN(chain,quadrature_strategy;init_params = initθ_)
-pde_system = PDESystem(eqs, bcs, domains, [t,x,y], [c])
-prob = NeuralPDE.discretize(pde_system,discretization)
-res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=200)
-
+nx = 128
+ny = 128
+dx = (x_max-x_min) / (nx - 1)
+dy = (y_max-y_min) / (ny -1)
 
 plot_comparison()
-
-#4rd step
-quadrature_strategy = NeuralPDE.QuadratureTraining(quadrature_alg=CubaCuhre(),
-                                                   reltol = 1e-8, abstol = 1e-6,
-                                                   maxiters = 30)
-domains = [t ∈ IntervalDomain(0.0,t_max),
-           x ∈ IntervalDomain(x_min,x_max),
-           y ∈ IntervalDomain(y_min,y_max)
-          ]
-initθ_ = res.minimizer
-discretization = NeuralPDE.PhysicsInformedNN(chain,quadrature_strategy;init_params = initθ_)
-pde_system = PDESystem(eqs, bcs, domains, [t,x,y], [c])
-prob = NeuralPDE.discretize(pde_system,discretization)
-res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=100)
-
-
-plot_comparison()
-
-
 
 # Animate
 anim = @animate for (i, t) in enumerate(0:dt:t_max)
@@ -168,7 +139,7 @@ anim = @animate for (i, t) in enumerate(0:dt:t_max)
     title = @sprintf("Advection-diffusion extract t = %.3f", t)
     heatmap(xs, ys, c_real, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal, clims=(0, 1.))
 end
-gif(anim, "advection_diffusion_2d_pinn_extract.gif", fps=15)
+gif(anim, "advection_diffusion_2d_extract.gif", fps=15)
 
 # Animate
 anim = @animate for (i, t) in enumerate(0:dt:t_max)
@@ -177,4 +148,4 @@ anim = @animate for (i, t) in enumerate(0:dt:t_max)
     title = @sprintf("Advection-diffusion predict t = %.3f", t)
     heatmap(xs, ys, c_predict, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal, clims=(0, 1.0))
 end
-gif(anim, "advection_diffusion_2d_pinn_predict.gif", fps=15)
+gif(anim, "advection_diffusion_pinn.gif", fps=15)
