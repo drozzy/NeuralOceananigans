@@ -7,14 +7,15 @@ using DiffEqFlux
 using NeuralPDE
 using Quadrature, Cubature, Cuba
 using Plots
+using IfElse
 
 @parameters t,x,y
 @variables c(..)
-@derivatives Dt'~t
-@derivatives Dxx''~x
-@derivatives Dyy''~y
-@derivatives Dx'~x
-@derivatives Dy'~y
+Dt = Differential(t)
+Dxx = Differential(x)^2
+Dyy = Differential(y)^2
+Dx = Differential(x)
+Dy = Differential(y)
 
 # Parameters
 u = 1.0
@@ -28,11 +29,19 @@ x_min = -1.0
 x_max = 1.0
 y_min = -1.0
 y_max = 1.0
+d = y_max-y_min
 
 cb = function (p,l)
     println("Current loss is: $l")
     return false
 end
+
+# function c_p(t,x,y) #periodic
+#     IfElse.ifelse(y-t<y_min,c(t, x, y+d),
+#     IfElse.ifelse(y-t>=y_max,c(t, x, y-d) ,
+#     IfElse.ifelse(x-t<x_min,c(t, x+d, y),
+#     IfElse.ifelse(x-t>=x_max,c(t, x-d, y) ,c(t, x, y)))))
+# end
 
 # exp(-(x^2+y^2)/0.1)
 # div(v_vector * c) = dx(uc) + dy(vc)
@@ -42,9 +51,8 @@ eqs = Dt(c(t,x,y)) ~ D * (Dxx(c(t,x,y)) + Dyy(c(t,x,y))) - (u*Dx(c(t,x,y)) + v*D
 bcs = [
         c(0, x, y) ~ exp(-(x^2+y^2)/0.1), #cos(π*x) * cos(π*y) + 1.0 #,
         c(t, x, y_min) ~ c(t, x, y_max),
-        c(t, x_min, y) ~ c(t, x_max, y),
+        c(t, x_min, y) ~ c(t, x_max, y)
       ]
-
 #first step
 domains = [t ∈ IntervalDomain(0.0,0.01),
            x ∈ IntervalDomain(x_min,x_max),
@@ -64,6 +72,7 @@ quadrature_strategy = NeuralPDE.QuadratureTraining(quadrature_alg=CubaCuhre(),
 discretization = NeuralPDE.PhysicsInformedNN(chain,quadrature_strategy)
 pde_system = PDESystem(eqs, bcs, domains, [t,x,y], [c])
 prob = NeuralPDE.discretize(pde_system,discretization)
+sym_prob = NeuralPDE.symbolic_discretize(pde_system,discretization)
 res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=2500)
 
 
@@ -74,7 +83,23 @@ dy = (y_max-y_min) / (ny -1)
 dt = 0.01
 phi = discretization.phi
 ts,xs,ys = [domain.domain.lower:dx:domain.domain.upper for domain in domains]
-analytic_solve(t, x, y) = exp(-((x-t)^2+(y-t)^2)/0.1)
+
+function analytic_solve(t,x,y)
+    if y-t<y_min
+         y = y + (x_max-x_min)
+    end
+    if x-t<x_min
+         x = x + y_max-y_min
+    end
+    if y-t>=y_max
+         y = y - y_max-y_min
+    end
+    if x-t>=x_max
+         x = x - y_max-y_min
+    end
+    exp(-((x-t)^2+(y-t)^2)/0.1)
+end
+
 function plots_init()
     c_predict = reshape([ phi([0.0, x, y], res.minimizer)[1] for x in xs for y in ys], length(xs), length(ys))
     extract_f(x, y) = exp(-((x)^2+(y)^2)/0.1)
@@ -87,7 +112,6 @@ end
 plots_init()
 
 function plot_comparison()
-
     # Animate
     anim = @animate for (i, t) in enumerate(0:dt:t_max)
         @info "Animating frame $i..."
@@ -99,7 +123,7 @@ function plot_comparison()
         title = @sprintf("c_real")
         p2 = heatmap(xs, ys, c_real, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal, clims=(0, 1.))
         title = @sprintf("error_c")
-        p3 = heatmap(xs, ys, error_c, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal,clims=(0, 0.1))
+        p3 = heatmap(xs, ys, error_c, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal)
         plot(p1,p2,p3)
     end
     gif(anim, "advection_diffusion_2d_pinn_comparison.gif", fps=15)
@@ -107,23 +131,23 @@ end
 
 plot_comparison()
 
-
+quadrature_strategy = NeuralPDE.QuadratureTraining(quadrature_alg=CubaCuhre(),
+                                                   reltol = 1e-8, abstol = 1e-6,
+                                                   maxiters = 30)
 for t_ in collect(0.1:0.2:t_max)
-    quadrature_strategy = NeuralPDE.QuadratureTraining(quadrature_alg=CubaCuhre(),
-                                                       reltol = 1e-8, abstol = 1e-6,
-                                                       maxiters = 30)
     domains = [t ∈ IntervalDomain(0.0,t_),
                x ∈ IntervalDomain(x_min,x_max),
                y ∈ IntervalDomain(y_min,y_max)
               ]
-    initθ_ = res.minimizer
-    discretization = NeuralPDE.PhysicsInformedNN(chain,quadrature_strategy;init_params = initθ_)
-    pde_system = PDESystem(eqs, bcs, domains, [t,x,y], [c])
+
+    pde_system = remake(pde_system; domain = domains )
+    discretization = remake(discretization; init_params = res.minimizer)
     prob = NeuralPDE.discretize(pde_system,discretization)
     res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=2500)
     plot_comparison()
     println("done")
 end
+
 
 nx = 128
 ny = 128
@@ -131,6 +155,8 @@ dx = (x_max-x_min) / (nx - 1)
 dy = (y_max-y_min) / (ny -1)
 
 plot_comparison()
+
+
 
 # Animate
 anim = @animate for (i, t) in enumerate(0:dt:t_max)
