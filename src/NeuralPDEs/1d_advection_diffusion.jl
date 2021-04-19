@@ -6,7 +6,7 @@ using Optim
 using DiffEqFlux
 using NeuralPDE
 using Quadrature, Cubature, Cuba
-using Plots
+# using Plots
 
 @parameters t,x
 @variables c(..)
@@ -51,9 +51,10 @@ chain = FastChain( FastDense(dim, hidden, tanh),
                     FastDense(hidden, hidden, tanh),
                     FastDense(hidden, 1))
 
-strategy = GridTraining(dx=[dt,dx])
+using DiffEqFlux
+strategy = NeuralPDE.GridTraining(dx)
 
-discretization = PhysicsInformedNN(chain, strategy=strategy)
+discretization = PhysicsInformedNN(chain, strategy)
 
 pde_system = PDESystem(eqs, bcs, domains, [t,x], [c])
 prob = discretize(pde_system,discretization)
