@@ -36,12 +36,6 @@ cb = function (p,l)
     return false
 end
 
-# function c_p(t,x,y) #periodic
-#     IfElse.ifelse(y-t<y_min,c(t, x, y+d),
-#     IfElse.ifelse(y-t>=y_max,c(t, x, y-d) ,
-#     IfElse.ifelse(x-t<x_min,c(t, x+d, y),
-#     IfElse.ifelse(x-t>=x_max,c(t, x-d, y) ,c(t, x, y)))))
-# end
 
 # exp(-(x^2+y^2)/0.1)
 # div(v_vector * c) = dx(uc) + dy(vc)
@@ -67,14 +61,16 @@ chain = FastChain(FastDense(dim, hidden, Flux.σ),
 
 quadrature_strategy = NeuralPDE.QuadratureTraining(quadrature_alg=CubaCuhre(),
                                                    reltol = 1e-4, abstol = 1e-2,
-                                                   maxiters = 20)
+                                                   maxiters = 20, batch=100)
 
 discretization = NeuralPDE.PhysicsInformedNN(chain,quadrature_strategy)
 pde_system = PDESystem(eqs, bcs, domains, [t,x,y], [c])
 prob = NeuralPDE.discretize(pde_system,discretization)
 sym_prob = NeuralPDE.symbolic_discretize(pde_system,discretization)
-res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=2500)
 
+# res = GalacticOptim.solve(prob,ADAM(0.1);cb=cb,maxiters=2500)
+# prob = remake(prob,u0=res.minimizer)
+res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=2000)
 
 nx = 32
 ny = 32
@@ -84,21 +80,7 @@ dt = 0.01
 phi = discretization.phi
 ts,xs,ys = [domain.domain.lower:dx:domain.domain.upper for domain in domains]
 
-function analytic_solve(t,x,y)
-    if y-t<y_min
-         y = y + (x_max-x_min)
-    end
-    if x-t<x_min
-         x = x + y_max-y_min
-    end
-    if y-t>=y_max
-         y = y - y_max-y_min
-    end
-    if x-t>=x_max
-         x = x - y_max-y_min
-    end
-    exp(-((x-t)^2+(y-t)^2)/0.1)
-end
+analytic_solve(t,x,y) = exp(-((x-t)^2+(y-t)^2)/0.1)
 
 function plots_init()
     c_predict = reshape([ phi([0.0, x, y], res.minimizer)[1] for x in xs for y in ys], length(xs), length(ys))
@@ -110,19 +92,21 @@ function plots_init()
 end
 
 plots_init()
+savefig("advection_diffusion_2d_init_comparison")
 
 function plot_comparison()
     # Animate
     anim = @animate for (i, t) in enumerate(0:dt:t_max)
         @info "Animating frame $i..."
+        title = @sprintf("Advection-diffusion t = %.3f", t)
         c_real = reshape([analytic_solve(t,x,y) for x in xs for y in ys], (length(xs),length(ys)))
         c_predict = reshape([phi([t, x, y], res.minimizer)[1] for x in xs for y in ys], length(xs), length(ys))
         error_c = abs.(c_predict .- c_real)
-        title = @sprintf("Advection-diffusion predict t = %.3f", t)
+        title = @sprintf("predict")
         p1 = heatmap(xs, ys, c_predict, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal, clims=(0, 1.))
-        title = @sprintf("c_real")
+        title = @sprintf("real")
         p2 = heatmap(xs, ys, c_real, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal, clims=(0, 1.))
-        title = @sprintf("error_c")
+        title = @sprintf("error")
         p3 = heatmap(xs, ys, error_c, label="", title=title , xlims=(-1, 1), ylims=(-1, 1), color=:thermal)
         plot(p1,p2,p3)
     end
@@ -143,7 +127,9 @@ for t_ in collect(0.1:0.2:t_max)
     pde_system = remake(pde_system; domain = domains )
     discretization = remake(discretization; init_params = res.minimizer)
     prob = NeuralPDE.discretize(pde_system,discretization)
-    res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=2500)
+    res = GalacticOptim.solve(prob,ADAM(0.1);cb=cb,maxiters=3000)
+    # prob = remake(prob,u0=res.minimizer)
+    # res = GalacticOptim.solve(prob,Optim.BFGS();cb=cb,maxiters=10)
     plot_comparison()
     println("done")
 end
@@ -153,6 +139,7 @@ nx = 128
 ny = 128
 dx = (x_max-x_min) / (nx - 1)
 dy = (y_max-y_min) / (ny -1)
+xs,ys = [domain.domain.lower:dx:domain.domain.upper for domain in domains[2:3]]
 
 plot_comparison()
 
